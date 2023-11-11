@@ -44,97 +44,61 @@ let rec eval_expr (e : exp) (env : environment) : value =
   | Plus (v1, v2) -> 
     let x = (eval_expr v1 env) in
     let y = (eval_expr v2 env) in
-    (match x with
-    | Int_Val (z1) -> 
-      (match y with
-        | Int_Val (z2) -> Int_Val (z1+z2)
-        | _ -> raise TypeError
-      )
+    (match x, y with
+    | Int_Val (z1), Int_Val (z2) -> Int_Val (z1+z2)
     | _ -> raise TypeError
     )
   | Minus (v1, v2) -> 
     let x = (eval_expr v1 env) in
     let y = (eval_expr v2 env) in
-    (match x with
-    | Int_Val (z1) -> 
-      (match y with
-        | Int_Val (z2) -> Int_Val (z1-z2)
-        | _ -> raise TypeError
-      )
+    (match x, y with
+    | Int_Val (z1), Int_Val (z2) -> Int_Val (z1-z2)
     | _ -> raise TypeError
     )
   | Times (v1, v2) ->
     let x = (eval_expr v1 env) in
     let y = (eval_expr v2 env) in
-    (match x with
-    | Int_Val (z1) -> 
-      (match y with
-        | Int_Val (z2) -> Int_Val (z1*z2)
-        | _ -> raise TypeError
-      )
+    (match x, y with
+    | Int_Val (z1), Int_Val (z2) -> Int_Val (z1*z2)
     | _ -> raise TypeError
     )
   | Div (v1, v2) ->
     let x = (eval_expr v1 env) in
     let y = (eval_expr v2 env) in
-    (match x with
-    | Int_Val (z1) -> 
-      (match y with
-        | Int_Val (0) -> raise DivByZeroError
-        | Int_Val (z2) -> Int_Val (z1/z2)
-        | _ -> raise TypeError
-      )
+    (match x, y with
+    | _, Int_Val (0) -> raise DivByZeroError
+    | Int_Val (z1), Int_Val (z2) -> Int_Val (z1/z2)
     | _ -> raise TypeError
     )
   | Mod (v1, v2) ->
     let x = (eval_expr v1 env) in
     let y = (eval_expr v2 env) in
-    (match x with
-    | Int_Val (z1) -> 
-      (match y with
-        | Int_Val (0) -> raise DivByZeroError
-        | Int_Val (z2) -> Int_Val (z1 mod z2)
-        | _ -> raise TypeError
-      )
+    (match x, y with
+    | _, Int_Val (0) -> raise DivByZeroError
+    | Int_Val (z1), Int_Val (z2) -> Int_Val (z1 mod z2)
     | _ -> raise TypeError
     )
   | Eq (v1, v2) ->
     let x = (eval_expr v1 env) in
     let y = (eval_expr v2 env) in
-    (match x with
-    | Int_Val (z1) ->
-      (match y with
-      | Int_Val (z2) -> Bool_Val (z1 = z2)
-      | _ -> raise TypeError
-      )
-    | Bool_Val(z1) -> 
-      (match y with
-      | Bool_Val (z2) -> Bool_Val (z1 = z2)
-      | _ -> raise TypeError
-      )
-    | _ -> raise TypeError
+    (match x, y with
+    | Int_Val (z1), Int_Val (z2) -> Bool_Val (z1 = z2)
+    | Bool_Val (z1), Bool_Val (z2) -> Bool_Val (z1 = z2)
+    | _, _ -> raise TypeError
     )
   | Leq (v1, v2) ->
     let x = (eval_expr v1 env) in
     let y = (eval_expr v2 env) in
-    (match x with
-    | Int_Val (z1) -> 
-      (match y with
-        | Int_Val (z2) -> Bool_Val (z1 <= z2)
-        | _ -> raise TypeError
-      )
-    | _ -> raise TypeError
+    (match x, y with
+    | Int_Val (z1), Int_Val (z2) -> Bool_Val (z1 <= z2)
+    | _, _ -> raise TypeError
     )
   | Lt (v1, v2) ->
     let x = (eval_expr v1 env) in
     let y = (eval_expr v2 env) in
-    (match x with
-    | Int_Val (z1) -> 
-      (match y with
-        | Int_Val (z2) -> Bool_Val (z1 < z2)
-        | _ -> raise TypeError
-      )
-    | _ -> raise TypeError
+    (match x, y with
+    | Int_Val (z1), Int_Val (z2) -> Bool_Val (z1 < z2)
+    | _, _ -> raise TypeError
     )
   | Not v -> 
     let x = (eval_expr v env) in
@@ -145,24 +109,16 @@ let rec eval_expr (e : exp) (env : environment) : value =
   | And (v1, v2) ->
     let x = (eval_expr v1 env) in
     let y = (eval_expr v2 env) in
-    (match x with
-    | Bool_Val (z1) -> 
-      (match y with
-        | Bool_Val (z2) -> Bool_Val (z1 && z2)
-        | _ -> raise TypeError
-      )
-    | _ -> raise TypeError
+    (match x, y with
+    | Bool_Val (z1), Bool_Val (z2) -> Bool_Val (z1 && z2)
+    | _, _ -> raise TypeError
     )
   | Or (v1, v2) ->
     let x = (eval_expr v1 env) in
     let y = (eval_expr v2 env) in
-    (match x with
-    | Bool_Val (z1) -> 
-      (match y with
-        | Bool_Val (z2) -> Bool_Val (z1 || z2)
-        | _ -> raise TypeError
-      )
-    | _ -> raise TypeError
+    (match x, y with
+    | Bool_Val (z1), Bool_Val (z2) -> Bool_Val (z1 || z2)
+    | _, _ -> raise TypeError
     )
   | True -> Bool_Val (true)
   | False -> Bool_Val (false)
@@ -211,13 +167,13 @@ let rec eval_command (c : com) (env : environment) : environment =
     eval_command v2 next_env
   | Assg (v1, v2) ->
     let x = List.assoc_opt v1 env in
-    let z = eval_expr v2 env in
+    let y = eval_expr v2 env in
     (match x with
-    | Some (y) ->
+    | Some (z) ->
       (match y, z with
-      | Int_Val _, Int_Val _ -> (v1, z)::env
-      | Bool_Val _, Bool_Val _ -> (v1, z)::env
-      | Closure _, Closure _ -> (v1, z)::env
+      | Int_Val _, Int_Val _ -> (v1, y)::env
+      | Bool_Val _, Bool_Val _ -> (v1, y)::env
+      | Closure _, Closure _ -> (v1, y)::env
       | _, _ -> raise TypeError
       )
     | None -> raise UndefinedVar
